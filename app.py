@@ -1,6 +1,6 @@
-import streamlit as st
 import smtplib
 from email.message import EmailMessage
+import streamlit as st
 
 def send_email(recipient, subject, body, sender_email, sender_password):
     msg = EmailMessage()
@@ -12,10 +12,12 @@ def send_email(recipient, subject, body, sender_email, sender_password):
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(sender_email, sender_password)
-            smtp.sendmail(sender_email, [recipient], msg.as_string())
+            smtp.sendmail(sender_email, [recipient], msg.as_bytes())
             st.success(f"Email sent to {recipient}")
+    except smtplib.SMTPException as e:
+        st.error(f"SMTP Error sending email to {recipient}: {str(e)}")
     except Exception as e:
-        st.error(f"Error sending email to {recipient}: {str(e)}")
+        st.error(f"Unexpected error sending email to {recipient}: {str(e)}")
 
 def main():
     st.title("Bulk Email Sender (Gmail)")
@@ -37,7 +39,10 @@ def main():
     **Note:** For security reasons, do not store the application-specific password in the app's code.""")
 
     sender_email = st.text_input("Enter your Gmail address:", placeholder="your_email@gmail.com")
-    sender_password = st.text_input("Enter your 'APPLICATION' password:", type="password", placeholder="Enter password securely")
+    sender_password = st.text_input("Enter your Gmail 'APPLICATION' password:", type="password", placeholder="Enter password securely")
+
+    # Input email subject
+    email_subject = st.text_input("Enter email subject:", placeholder="Enter subject here")
 
     # Input email addresses
     email_list = st.text_area("Enter email addresses (one per line)")
@@ -48,7 +53,10 @@ def main():
 
     if st.button("Send Emails"):
         for recipient in email_list:
-            send_email(recipient, "Your Subject", email_content, sender_email, sender_password)
+            try:
+                send_email(recipient, email_subject, email_content, sender_email, sender_password)
+            except Exception as e:
+                st.error(f"Error sending email to {recipient}: {str(e)}")
 
 if __name__ == "__main__":
     main()
